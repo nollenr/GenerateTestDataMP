@@ -5,7 +5,8 @@ import time
 import psycopg2
 
 class MPQueue():
-    def __init__(self, application_name = 'IPS', update_rec_with_leaseholder=False, unique_index_value_offset=0):
+    def __init__(self, application_name = 'IPS', connection_dict=None, update_rec_with_leaseholder=False, unique_index_value_offset=0):
+        self.connection_dict = connection_dict
         self.update_rec_with_leaseholder = update_rec_with_leaseholder
         self.application_name = application_name
         self.unique_index_value_offset = unique_index_value_offset
@@ -19,16 +20,8 @@ class MPQueue():
         # This is all queue setup.  The queue processing starts at the "for args" loop.
         print('worker {} connecting to the database.'.format(current_process().name))
         try:
-            # crdb = cockroach_manager.CockroachManager.use_secret(True)
-            connect_dict = {
-                "username": "ron",
-                "password": "adfafadsfsa",
-                "host": "nollen-klei-demo-nlb-c9eee36bd5301663.elb.us-west-2.amazonaws.com",
-                "port": "26257",
-                "dbname": "defaultdb",
-                "ca.crt": "/home/ec2-user/Library/CockroachCloud/certs/nollen-klei-demo-ca.crt"
-            }   
-            crdb = cockroach_manager.CockroachManager(connect_dict)
+            # crdb = cockroach_manager.CockroachManager.use_secret(True) 
+            crdb = cockroach_manager.CockroachManager(self.connection_dict)
         except:
             print('Unable to connect to the database')
             exit(1)
