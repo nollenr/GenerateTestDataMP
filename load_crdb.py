@@ -27,7 +27,7 @@ end;
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=3
+    NUMBER_OF_WORKERS=30
     NUMBER_OF_TASKS=100000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False

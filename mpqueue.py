@@ -5,6 +5,10 @@ import time
 import psycopg2
 
 class MPQueue():
+    """Create a worker definition that can be used in processing queues.
+
+    Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
+    """
     def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False, unique_index_value_offset=0):
         self.use_aws_secret = use_aws_secret
         self.connection_dict = connection_dict
