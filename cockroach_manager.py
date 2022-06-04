@@ -61,6 +61,8 @@ class CockroachManager():
 
         try:
             get_secret_value_response = client.get_secret_value(
+                # TODO
+                # This too, needs to be a parameter!  Hello, argparse?
                 SecretId=secret_name
             )
         except ClientError as e:

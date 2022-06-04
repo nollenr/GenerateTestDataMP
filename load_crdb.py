@@ -27,12 +27,14 @@ end;
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=30
+    NUMBER_OF_WORKERS=3
     NUMBER_OF_TASKS=100000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
     UNIQUE_INDEX_VALUE_OFFSET=0
-    USE_SECRET_MANAGER = True
+    # Database connection details will either be from an AWS Secret, or they'll have
+    # to be supplied as a connection dictionary
+    GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = True
 
     """
     if I'm going to have a unique index on the table, then I need to make the 
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     """
 
     # The Cockroach Manager Class allows connection via secret manager or a connection string.
-    if USE_SECRET_MANAGER:
+    if GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET:
         connect_dict = None
     else:
             connect_dict = {
@@ -54,10 +56,10 @@ if __name__ == '__main__':
         }
     
     if USE_UNIQUE_INDEX:
-        if USE_SECRET_MANAGER:
-            crdb = cockroach_manager.CockroachManager.use_secret(True) 
+        if GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET:
+            crdb = cockroach_manager.CockroachManager.use_secret(auto_commit=True) 
         else:
-            crdb = cockroach_manager.CockroachManager(connect_dict)
+            crdb = cockroach_manager.CockroachManager(connect_dict, auto_commit=True)
         cursor = crdb.connection.cursor()
         # TODO
         # This has to change if this is going to be used on multiple app servers.  Otherwise, it will hang.
@@ -68,7 +70,7 @@ if __name__ == '__main__':
 
 
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
-    mpunit = mpqueue.MPQueue(application_name = 'IPS', connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, unique_index_value_offset = UNIQUE_INDEX_VALUE_OFFSET)
+    mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, unique_index_value_offset = UNIQUE_INDEX_VALUE_OFFSET)
 
     for i in range(NUMBER_OF_WORKERS):
         Process(target=mpunit.worker, args=(mpunit.task_queue, mpunit.done_queue)).start()

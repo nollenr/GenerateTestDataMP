@@ -5,7 +5,8 @@ import time
 import psycopg2
 
 class MPQueue():
-    def __init__(self, application_name = 'IPS', connection_dict=None, update_rec_with_leaseholder=False, unique_index_value_offset=0):
+    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False, unique_index_value_offset=0):
+        self.use_aws_secret = use_aws_secret
         self.connection_dict = connection_dict
         self.update_rec_with_leaseholder = update_rec_with_leaseholder
         self.application_name = application_name
@@ -20,8 +21,10 @@ class MPQueue():
         # This is all queue setup.  The queue processing starts at the "for args" loop.
         print('worker {} connecting to the database.'.format(current_process().name))
         try:
-            # crdb = cockroach_manager.CockroachManager.use_secret(True) 
-            crdb = cockroach_manager.CockroachManager(self.connection_dict)
+            if self.use_aws_secret:
+                crdb = cockroach_manager.CockroachManager.use_secret(True) 
+            else:
+                crdb = cockroach_manager.CockroachManager(self.connection_dict)
         except:
             print('Unable to connect to the database')
             exit(1)
