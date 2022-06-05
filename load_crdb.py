@@ -18,12 +18,11 @@ Table used in this load experiment
     jsonb_col jsonb not null);
 
 begin;
-    create unique index ips_1 on ips(int8_col);
+    create unique index ips_1 on ips(create_time, cluster_node, int8_col) where int8_col is not null;
     create index ips_2 on ips(create_time);
     create index ips_3 on ips(int8_col);
 end;
 """
-
 
 if __name__ == '__main__':
 
@@ -55,20 +54,6 @@ if __name__ == '__main__':
             "ca.crt": "/home/ec2-user/Library/CockroachCloud/certs/nollen-klei-demo-ca.crt"
         }
     
-    if USE_UNIQUE_INDEX:
-        if GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET:
-            crdb = cockroach_manager.CockroachManager.use_secret(auto_commit=True) 
-        else:
-            crdb = cockroach_manager.CockroachManager(connect_dict, auto_commit=True)
-        cursor = crdb.connection.cursor()
-        # TODO
-        # This has to change if this is going to be used on multiple app servers.  Otherwise, it will hang.
-        # Get a time offset from the command line (after argparse is implemented) to use in an ASOT query.
-        cursor.execute('select coalesce(max(int8_col),0) from ips')
-        UNIQUE_INDEX_VALUE_OFFSET = cursor.fetchone()[0] + 1
-        print('Whether or not there is a unique index on the table, the offset has been retrieved and it is {}'.format(UNIQUE_INDEX_VALUE_OFFSET))
-
-
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
     mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, unique_index_value_offset = UNIQUE_INDEX_VALUE_OFFSET)
 
