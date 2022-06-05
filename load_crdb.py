@@ -12,7 +12,7 @@ Table used in this load experiment
     gateway_region varchar(50),
     gateway_az     varchar(50),
     lease_holder int,
-    int8_col int8 not null,
+    int8_col int8 null,
     varchar50_col varchar(50) not null,
     bool_col bool not null,
     jsonb_col jsonb not null);
@@ -26,8 +26,8 @@ end;
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=30
-    NUMBER_OF_TASKS=100000
+    NUMBER_OF_WORKERS=60
+    NUMBER_OF_TASKS=1000000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
     UNIQUE_INDEX_VALUE_OFFSET=0
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         }
     
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
-    mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, unique_index_value_offset = UNIQUE_INDEX_VALUE_OFFSET)
+    mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, )
 
     for i in range(NUMBER_OF_WORKERS):
         Process(target=mpunit.worker, args=(mpunit.task_queue, mpunit.done_queue)).start()

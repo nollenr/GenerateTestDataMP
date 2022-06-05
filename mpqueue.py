@@ -9,12 +9,11 @@ class MPQueue():
 
     Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
     """
-    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False, unique_index_value_offset=0):
+    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False):
         self.use_aws_secret = use_aws_secret
         self.connection_dict = connection_dict
         self.update_rec_with_leaseholder = update_rec_with_leaseholder
         self.application_name = application_name
-        self.unique_index_value_offset = unique_index_value_offset
         self.task_queue = Queue()
         self.done_queue = Queue()
 
@@ -47,7 +46,12 @@ class MPQueue():
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
-            values = (current_process().name,cluster_node,gateway_region,args[0]+self.unique_index_value_offset,'one','True','{"one": "1", "two": "2"}')
+            # Only 90% of the int8_col values should be null.  10% have values.
+            if args[0]%10:
+                int8_val = None
+            else:
+                int8_val = args[0]
+            values = (current_process().name,cluster_node,gateway_region,int8_val,'one','True','{"one": "1", "two": "2"}')
             tic = time.perf_counter()
             cursor.execute(sql_statement, values)
             toc = time.perf_counter()
