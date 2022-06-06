@@ -9,16 +9,16 @@ class CockroachManager():
     {
         "username": "put your database username here",
         "password": "put your database password here",
-        "host": "internal-nollen-cmek-cluster-7jd.aws-us-west-2.cockroachlabs.cloud",
+        "host": "put your hostname or ip address here",
         "port": "26257",
-        "dbname": "defaultdb",
-        "ca.crt": "/home/ec2-user/Library/CockroachCloud/certs/nollen-cmek-cluster-ca.crt"
+        "dbname": "put your dbname here",
+        "ca.crt": "put the location and name of your ca.crt here"
     }    """
     def __init__(self, connect_dict, auto_commit=False):
         """Return a connection to CockroachDB
         
         auto_commit boolean:
-            do you want the connect to be autocommit?
+            do you want the connection to be autocommited?
         """
         try:
             self.connection = psycopg2.connect(

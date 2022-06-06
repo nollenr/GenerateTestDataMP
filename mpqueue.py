@@ -3,13 +3,16 @@ from platform import java_ver
 import cockroach_manager
 import time
 import psycopg2
+from psycopg2.extras import execute_values
+from psycopg2.errors import SerializationFailure
 
 class MPQueue():
     """Create a worker definition that can be used in processing queues.
 
     Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
     """
-    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False):
+    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False, use_multi_row_insert = False):
+        self.use_multi_row_insert = use_multi_row_insert
         self.use_aws_secret = use_aws_secret
         self.connection_dict = connection_dict
         self.update_rec_with_leaseholder = update_rec_with_leaseholder
@@ -39,23 +42,37 @@ class MPQueue():
         cursor.execute('SET application_name = %s',(self.application_name,))
         print('worker {} connected to the cluster on node {} gateway region {}.'.format(current_process().name, cluster_node, gateway_region))
 
-        if self.update_rec_with_leaseholder:
-            sql_statement = 'insert into ips(worker, cluster_node, gateway_region, int8_col, varchar50_col, bool_col, jsonb_col) values (%s, %s, %s, %s, %s, %s, %s) returning id'
+        sql_statement = 'insert into ips(worker, cluster_node, gateway_region, int8_col, varchar50_col, bool_col, jsonb_col) values '
+        if self.use_multi_row_insert:
+            sql_statement += " %s"
         else:
-            sql_statement = 'insert into ips(worker, cluster_node, gateway_region, int8_col, varchar50_col, bool_col, jsonb_col) values (%s, %s, %s, %s, %s, %s, %s)'
+            sql_statement += " (%s, %s, %s, %s, %s, %s, %s)"
+
+        if self.update_rec_with_leaseholder:
+            sql_statement += ' returning id'
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
+            # TODO
+            # This no longer works in a multi-row insert - actually, it kinda does!
             # Only 90% of the int8_col values should be null.  10% have values.
-            if args[0]%10:
+            if args[0][0]%10:
                 int8_val = None
             else:
-                int8_val = args[0]
+                int8_val = args[0][0]
+            
             values = (current_process().name,cluster_node,gateway_region,int8_val,'one','True','{"one": "1", "two": "2"}')
-            tic = time.perf_counter()
-            cursor.execute(sql_statement, values)
-            toc = time.perf_counter()
-            # result = 'from worker: {}\tthe args are: {}'.format(current_process().name, args)
+            if (len(args)) == 1:
+                tic = time.perf_counter()
+                cursor.execute(sql_statement, values)
+                toc = time.perf_counter()
+            else:
+                # We're going to do a multi-row insert
+                values = [(current_process().name,cluster_node,gateway_region,int8_val,'one','True','{"one": "1", "two": "2"}') for arg in args]    
+                tic = time.perf_counter()
+                execute_values(cursor, sql_statement, values)
+                toc = time.perf_counter()
+                # result = 'from worker: {}\tthe args are: {}'.format(current_process().name, args)
             if self.update_rec_with_leaseholder:
                 id = cursor.fetchone()
                 try:
@@ -74,7 +91,7 @@ class MPQueue():
             for i in range(args[1]):
                 self.task_queue.put((i,i))
                 if self.task_queue.qsize() > 10000:
-                #     print('task queue size is over 1000 records.')
+                #     print('task queue size is over 10000 records.')
                     time.sleep(0.1)
             print('done putting stuff on queue.  Number of items on task queue is {}'.format(mpunit.task_queue.qsize()))
 
