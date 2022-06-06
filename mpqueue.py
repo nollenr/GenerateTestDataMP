@@ -26,7 +26,6 @@ class MPQueue():
 
     def worker(self, input, output):
         # This is all queue setup.  The queue processing starts at the "for args" loop.
-        print('worker {} connecting to the database.'.format(current_process().name))
         try:
             if self.use_aws_secret:
                 crdb = cockroach_manager.CockroachManager.use_secret(True) 
@@ -62,7 +61,7 @@ class MPQueue():
                 int8_val = None
             else:
                 int8_val = args[0][0]
-            values = [current_process().name,cluster_node,gateway_region,int8_val,'one-hundered','True','{"one": "1", "two": "2"}']
+            values = [current_process().name,cluster_node,gateway_region,int8_val,'one-hundred','True','{"one": "1", "two": "2"}']
 
             # based on anecdotal testing, I believe a cursor.execute is faster than execute_values for single row inserts
             # if there is only one arg has length one, then this is a single row insert.  

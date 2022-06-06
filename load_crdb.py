@@ -28,15 +28,15 @@ end;
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=60
-    NUMBER_OF_TASKS=10000
+    NUMBER_OF_WORKERS=300
+    NUMBER_OF_TASKS=1000000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
-    USE_MULTI_ROW_INSERT = True
+    USE_MULTI_ROW_INSERT = False
     MUTLI_ROW_INSERT_SIZE = 100
     # Database connection details will either be from an AWS Secret, or they'll have
     # to be supplied as a connection dictionary
-    GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = True
+    GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = False
 
     # The Cockroach Manager Class allows connection via secret manager or a connection string.
     # To use a connection string, complete the details below (you can place the password in an
@@ -54,14 +54,16 @@ if __name__ == '__main__':
         connect_dict = None
     else:
         connect_dict = {
-            "username": "ron",
-            "password": "adfadfadsfsafdsa",
-            "host": "nollen-klei-demo-nlb-c9eee36bd5301663.elb.us-west-2.amazonaws.com",
+            "user": "login",
+            "host": "cockroach-dev.klei.com",
             "port": "26257",
-            "dbname": "defaultdb",
-            "ca.crt": "/home/ec2-user/Library/CockroachCloud/certs/nollen-klei-demo-ca.crt"
+            "database": "defaultdb",
+            "sslmode": "require",
+            "sslrootcert": "/home/ec2-user/Library/CockroachCloud/certs/klei-demo-ca.crt",
+            "sslcert": "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.crt",
+            "sslkey": "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.key"
         }
-    
+
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
     mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, use_multi_row_insert=USE_MULTI_ROW_INSERT)
 

@@ -1,4 +1,5 @@
 import psycopg2
+import json
 
 class CockroachManager():
     """A Note on connecting:
@@ -22,13 +23,14 @@ class CockroachManager():
         """
         try:
             self.connection = psycopg2.connect(
-                database=connect_dict['dbname'],
-                user=connect_dict['username'],
-                password=connect_dict['password'],
-                sslmode='verify-ca',
-                sslrootcert=connect_dict['ca.crt'],
-                port=connect_dict['port'],
-                host=connect_dict['host']
+                user = connect_dict['user'],
+                host = connect_dict['host'],
+                port =  connect_dict['port'],
+                database =  connect_dict['database'],
+                sslmode = connect_dict['sslmode'],
+                sslrootcert =  connect_dict['sslrootcert'],
+                sslcert = connect_dict['sslcert'],
+                sslkey = connect_dict['sslkey']
             )
             self.connection.set_session(autocommit=auto_commit)
         except (Exception, psycopg2.DatabaseError) as error:
