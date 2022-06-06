@@ -28,15 +28,15 @@ end;
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=300
-    NUMBER_OF_TASKS=1000000
+    NUMBER_OF_WORKERS=1
+    NUMBER_OF_TASKS=1
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
     USE_MULTI_ROW_INSERT = False
     MUTLI_ROW_INSERT_SIZE = 100
     # Database connection details will either be from an AWS Secret, or they'll have
     # to be supplied as a connection dictionary
-    GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = False
+    GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = True
 
     # The Cockroach Manager Class allows connection via secret manager or a connection string.
     # To use a connection string, complete the details below (you can place the password in an
@@ -53,15 +53,16 @@ if __name__ == '__main__':
     if GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET:
         connect_dict = None
     else:
+        # Example using certs to connect
         connect_dict = {
-            "user": "login",
-            "host": "cockroach-dev.klei.com",
-            "port": "26257",
-            "database": "defaultdb",
-            "sslmode": "require",
-            "sslrootcert": "/home/ec2-user/Library/CockroachCloud/certs/klei-demo-ca.crt",
-            "sslcert": "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.crt",
-            "sslkey": "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.key"
+            "user"          : "myuser",
+            "host"          : "example.host.com",
+            "port"          : "26257",
+            "dbname"        : "defaultdb",
+            "sslmode"       : "require",
+            "sslrootcert"   : "/home/ec2-user/Library/CockroachCloud/certs/ca.crt",
+            "sslcert"       : "/home/ec2-user/Library/CockroachCloud/certs/myuser.crt",
+            "sslkey"        : "/home/ec2-user/Library/CockroachCloud/certs/myuser.key"
         }
 
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.

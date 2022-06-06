@@ -8,12 +8,12 @@ class CockroachManager():
 
     To connect using a dictionary, the following is an example of the data you need in the dictionary
     {
-        "username": "put your database username here",
+        "user": "put your database username here",
         "password": "put your database password here",
         "host": "put your hostname or ip address here",
         "port": "26257",
         "dbname": "put your dbname here",
-        "ca.crt": "put the location and name of your ca.crt here"
+        "sslrootcert": "put the location and name of your ca.crt here"
     }    """
     def __init__(self, connect_dict, auto_commit=False):
         """Return a connection to CockroachDB
@@ -21,17 +21,23 @@ class CockroachManager():
         auto_commit boolean:
             do you want the connection to be autocommited?
         """
+
+        # start by converting the incoming dictionary to a string (data source name)
+        connect_dsn = ' '.join([(key + '='+ val) for (key, val) in connect_dict.items()])
+        print(connect_dsn)
         try:
-            self.connection = psycopg2.connect(
-                user = connect_dict['user'],
-                host = connect_dict['host'],
-                port =  connect_dict['port'],
-                database =  connect_dict['database'],
-                sslmode = connect_dict['sslmode'],
-                sslrootcert =  connect_dict['sslrootcert'],
-                sslcert = connect_dict['sslcert'],
-                sslkey = connect_dict['sslkey']
-            )
+            self.connection = psycopg2.connect(connect_dsn)
+        # try:
+        #     self.connection = psycopg2.connect(
+        #         user = connect_dict['user'],
+        #         host = connect_dict['host'],
+        #         port =  connect_dict['port'],
+        #         database =  connect_dict['database'],
+        #         sslmode = connect_dict['sslmode'],
+        #         sslrootcert =  connect_dict['sslrootcert'],
+        #         sslcert = connect_dict['sslcert'],
+        #         sslkey = connect_dict['sslkey']
+        #     )
             self.connection.set_session(autocommit=auto_commit)
         except (Exception, psycopg2.DatabaseError) as error:
             print("Error while connecting to PostgreSQL", error) 
