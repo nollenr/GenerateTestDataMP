@@ -23,6 +23,7 @@ class MPQueue():
         self.driver_task_queue = Queue()
         self.driver_done_queue = Queue()
 
+
     def worker(self, input, output):
         # This is all queue setup.  The queue processing starts at the "for args" loop.
         print('worker {} connecting to the database.'.format(current_process().name))
@@ -50,6 +51,7 @@ class MPQueue():
 
         if self.update_rec_with_leaseholder:
             sql_statement += ' returning id'
+        
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
@@ -60,15 +62,17 @@ class MPQueue():
                 int8_val = None
             else:
                 int8_val = args[0][0]
-            
-            values = (current_process().name,cluster_node,gateway_region,int8_val,'one','True','{"one": "1", "two": "2"}')
+            values = [current_process().name,cluster_node,gateway_region,int8_val,'one-hundered','True','{"one": "1", "two": "2"}']
+
+            # based on anecdotal testing, I believe a cursor.execute is faster than execute_values for single row inserts
+            # if there is only one arg has length one, then this is a single row insert.  
             if (len(args)) == 1:
                 tic = time.perf_counter()
                 cursor.execute(sql_statement, values)
                 toc = time.perf_counter()
             else:
                 # We're going to do a multi-row insert
-                values = [(current_process().name,cluster_node,gateway_region,int8_val,'one','True','{"one": "1", "two": "2"}') for arg in args]    
+                values = [(values) for arg in args]    
                 tic = time.perf_counter()
                 execute_values(cursor, sql_statement, values)
                 toc = time.perf_counter()

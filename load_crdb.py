@@ -1,7 +1,6 @@
 from pickle import FALSE
 import mpqueue
 from multiprocessing import Process, Queue, current_process
-import cockroach_manager
 
 """
 Table used in this load experiment
@@ -30,12 +29,11 @@ end;
 if __name__ == '__main__':
 
     NUMBER_OF_WORKERS=60
-    NUMBER_OF_TASKS=100000
+    NUMBER_OF_TASKS=10000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
-    UNIQUE_INDEX_VALUE_OFFSET=0
     USE_MULTI_ROW_INSERT = True
-    MUTLI_ROW_INSERT_SIZE = 10
+    MUTLI_ROW_INSERT_SIZE = 100
     # Database connection details will either be from an AWS Secret, or they'll have
     # to be supplied as a connection dictionary
     GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET = True

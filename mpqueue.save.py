@@ -38,7 +38,7 @@ class MPQueue():
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
-            values = (current_process().name,cluster_node,gateway_region,args[0]+self.unique_index_value_offset,'one','True','{"one": "1", "two": "2"}')
+            values = (current_process().name,cluster_node,gateway_region,args[0]+self.unique_index_value_offset,'two','True','{"one": "1", "two": "2"}')
             tic = time.perf_counter()
             cursor.execute(sql_statement, values)
             toc = time.perf_counter()
