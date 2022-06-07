@@ -6,6 +6,7 @@ class CockroachManager():
     """A Note on connecting:
 
     Database Connection Parameters: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+    psycopg2 module: https://www.psycopg.org/docs/module.html#psycopg2.connect
 
     if you want to use secrets to connect to the database, you to have boto3, base64 and botocore.exceptions in the python environment (pip3 install boto3, etc.)
     To use secrets, you must have set up an IAM Policy and Role for the user who's secret and secret key has been defined and you must have run aws configure to set those values.
