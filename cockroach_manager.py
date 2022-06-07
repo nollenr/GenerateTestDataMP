@@ -1,5 +1,6 @@
 import psycopg2
 import json
+import os
 
 class CockroachManager():
     """A Note on connecting:
@@ -22,9 +23,20 @@ class CockroachManager():
             do you want the connection to be autocommited?
         """
 
-        # start by converting the incoming dictionary to a string (data source name)
+        # if we have the password or if we're connecting via an sslcert, then we 
+        # have all the info we need.  Otherwise, the password was not supplied
+        # in the connect_dict (or via the secret) and we need to see if we 
+        # can get the password from the envrionment
+        if ("password" not in connect_dict) and ("sslcert" not in connect_dict):
+            try:
+                crdb_password = os.environ['password']
+                connect_dict['password'] = crdb_password
+            except:
+                print('the "password" environment variable has not been set.')
+                exit(1)
+
+        # convert the incoming dictionary to a string (data source name)
         connect_dsn = ' '.join([(key + '='+ val) for (key, val) in connect_dict.items()])
-        print(connect_dsn)
         try:
             self.connection = psycopg2.connect(connect_dsn)
         # try:
@@ -47,33 +59,41 @@ class CockroachManager():
         self.connection.close()   
 
     @classmethod
-    def use_secret(cls, auto_commit=False):
+    def use_secret(cls, secret_name, region_name, auto_commit=False):
+        # TODO:  I do not seem to be getting error information when there are problems with the boto3 client
+        # for a quick test, change the region and "nothing" happens... no error gets raised.  Not sure what's
+        # going on 
         import boto3
         import base64
         from botocore.exceptions import ClientError
         import json
         """Return a secret from AWS Secret Manager"""
-        secret_name = "/nollen/nollen-cmek-cluster"
-        region_name = "us-west-2"
 
         # Create a Secrets Manager client
-        session = boto3.session.Session()
-        client = session.client(
-            service_name='secretsmanager',
-            region_name=region_name
-        )
+        try:
+            session = boto3.session.Session()
+            client = session.client(
+                service_name='secretsmanager',
+                region_name=region_name
+            )
+        except:
+            print('Unable to establish a client.')
+            raise
 
+        if not client:
+            print('Unable to establish a boto3 client')
+
+      
         # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
         # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         # We rethrow the exception by default.
 
         try:
             get_secret_value_response = client.get_secret_value(
-                # TODO
-                # This too, needs to be a parameter!  Hello, argparse?
                 SecretId=secret_name
             )
         except ClientError as e:
+            print('Failure getting secret!')
             if e.response['Error']['Code'] == 'DecryptionFailureException':
                 # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
                 # Deal with the exception here, and/or rethrow at your discretion.
@@ -94,6 +114,8 @@ class CockroachManager():
                 # We can't find the resource that you asked for.
                 # Deal with the exception here, and/or rethrow at your discretion.
                 raise e
+            else:
+                raise e
         else:
             # Decrypts secret using the associated KMS key.
             # Depending on whether the secret is a string or binary, one of these fields will be populated.
@@ -101,5 +123,5 @@ class CockroachManager():
                 secret = get_secret_value_response['SecretString']
             else:
                 decoded_binary_secret = base64.b64decode(get_secret_value_response['SecretBinary'])
-        return cls(json.loads(secret), auto_commit)
+            return cls(json.loads(secret), auto_commit)
 

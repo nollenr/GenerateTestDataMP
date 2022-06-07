@@ -11,7 +11,10 @@ class MPQueue():
 
     Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
     """
-    def __init__(self, application_name = 'IPS', use_aws_secret=False, connection_dict=None, update_rec_with_leaseholder=False, use_multi_row_insert = False):
+    def __init__(self, application_name = 'IPS', use_aws_secret=False, secret_name=None, region_name=None, auto_commit=False, connection_dict=None, update_rec_with_leaseholder=False, use_multi_row_insert = False):
+        self.region_name = region_name
+        self.auto_commit = auto_commit
+        self.secret_name = secret_name
         self.use_multi_row_insert = use_multi_row_insert
         self.use_aws_secret = use_aws_secret
         self.connection_dict = connection_dict
@@ -28,9 +31,9 @@ class MPQueue():
         # This is all queue setup.  The queue processing starts at the "for args" loop.
         try:
             if self.use_aws_secret:
-                crdb = cockroach_manager.CockroachManager.use_secret(True) 
+                crdb = cockroach_manager.CockroachManager.use_secret(self.secret_name, self.region_name, self.auto_commit) 
             else:
-                crdb = cockroach_manager.CockroachManager(self.connection_dict)
+                crdb = cockroach_manager.CockroachManager(self.connection_dict, self.auto_commit)
         except:
             print('Unable to connect to the database')
             exit(1)
@@ -54,9 +57,6 @@ class MPQueue():
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
-            # TODO
-            # This no longer works in a multi-row insert - actually, it kinda does!
-            # Only 90% of the int8_col values should be null.  10% have values.
             if args[0][0]%10:
                 int8_val = None
             else:
