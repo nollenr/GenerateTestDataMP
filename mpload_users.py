@@ -12,8 +12,26 @@ class MPQueue():
     """Create a worker definition that can be used in processing queues.
 
     Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
+
+    CREATE TABLE public.users (
+        id UUID NOT NULL DEFAULT gen_random_uuid(),
+        auth_id VARCHAR(100) NOT NULL,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NULL,
+        email VARCHAR NOT NULL,
+        profile_picture_id VARCHAR NULL,
+        default_picture VARCHAR NULL,
+        preferences JSONB NULL,
+        metadata JSONB NULL,
+        created_at TIMESTAMPTZ NULL DEFAULT now():::TIMESTAMPTZ,
+        updated_at TIMESTAMPTZ NULL DEFAULT now():::TIMESTAMPTZ,
+        crdb_region db_with_abstractions.public.crdb_internal_region NOT VISIBLE NOT NULL DEFAULT default_to_database_primary_region(gateway_region())::db_with_abstractions.public.crdb_internal_region,
+        CONSTRAINT users_rbr_pkey PRIMARY KEY (id ASC)
+    ) LOCALITY REGIONAL BY ROW
+
+
     """
-    def __init__(self, application_name = 'IPS', use_aws_secret=False, secret_name=None, region_name=None, auto_commit=False, connection_dict=None, update_rec_with_leaseholder=False, use_multi_row_insert = False):
+    def __init__(self, application_name = 'load_users', use_aws_secret=False, secret_name=None, region_name=None, auto_commit=False, connection_dict=None, update_rec_with_leaseholder=False, use_multi_row_insert = False):
         self.region_name = region_name
         self.auto_commit = auto_commit
         self.secret_name = secret_name
@@ -48,7 +66,8 @@ class MPQueue():
         cursor.execute('SET application_name = %s',(self.application_name,))
         print('worker {} connected to the cluster on node {} gateway region {}.'.format(current_process().name, cluster_node, gateway_region))
 
-        sql_statement = 'insert into ips(worker, cluster_node, gateway_region, int8_col, varchar50_col, bool_col, jsonb_col) values '
+        sql_statement = 'insert into users(auth_id, first_name, last_name, email, profile_picture_id, default_picture, national_id) values '
+
         if self.use_multi_row_insert:
             sql_statement += " %s"
         else:
@@ -59,15 +78,8 @@ class MPQueue():
 
         print('Start the processing of the queue...')
         for args in iter(input.get, 'STOP'):
-            if args[0][0]%10:
-                int8_val = None
-            else:
-                int8_val = args[0][0]
-            jsonb={}
-            for i in range(20):
-                jsonb[str(i)] = self.fake.sentence(nb_words=5)
-            jsonb["int"] = 12
-            values = [current_process().name,cluster_node,gateway_region,int8_val,'one-hundred','True',json.dumps(jsonb)]
+            #         auth_id,               first_name,  last_name,     email,               profile_picture_id, default_picture, national_id
+            values = [current_process().name,cluster_node,gateway_region,'myemail@gmail.com', 'profile_picture','default picture', self.fake.ssn()]
 
             # based on anecdotal testing, I believe a cursor.execute is faster than execute_values for single row inserts
             # if there is only one arg has length one, then this is a single row insert.  
@@ -78,34 +90,14 @@ class MPQueue():
             else:
                 # We're going to do a multi-row insert
                 values = [(values) for arg in args]    
+                # change the last value in the list (the ssn) to a new ssn, so that all records have a unique ssn
+                values = [value[:-1] + [self.fake.ssn()] for value in values]
                 tic = time.perf_counter()
                 execute_values(cursor, sql_statement, values)
                 toc = time.perf_counter()
                 # result = 'from worker: {}\tthe args are: {}'.format(current_process().name, args)
-            if self.update_rec_with_leaseholder:
-                id = cursor.fetchone()
-                try:
-                    cursor.execute("select lease_holder from [show range from table ips for row(%s)]", id)
-                    lease_holder = cursor.fetchone()[0]
-                    cursor.execute('update ips set lease_holder = %s where id = %s',(lease_holder, id))
-                except (Exception, psycopg2.DatabaseError) as error:
-                    print("Error getting the lease_holder", error)    
             output.put({'worker':current_process().name, 'insert': toc-tic, 'records': 1})
         # print('Worker {} is done.'.format(current_process().name))
 
-    def enqueuer(self, input, outout):
-        for args in iter(input.get, 'STOP'):
-            for i in range(args[0]):
-                Process(target=self.worker, args=(self.task_queue, self.done_queue)).start()
-            for i in range(args[1]):
-                self.task_queue.put((i,i))
-                if self.task_queue.qsize() > 10000:
-                #     print('task queue size is over 10000 records.')
-                    time.sleep(0.1)
-            print('done putting stuff on queue.  Number of items on task queue is {}'.format(mpunit.task_queue.qsize()))
 
-    def dequeuer(self, intput, output):
-        for args in iter(input.get, 'STOP'):
-            pass
-        # When everything has been dequeued, stop the workers
         

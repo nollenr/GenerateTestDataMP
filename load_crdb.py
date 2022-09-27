@@ -1,38 +1,19 @@
 from pickle import FALSE
-import mpqueue
+import mpload_users
 from multiprocessing import Process, Queue, current_process
 
 """
-Table used in this load experiment
-create table ips(
-    id              UUID            DEFAULT gen_random_uuid()   primary key,
-    create_time     TIMESTAMPTZ     default now()               NOT NULL,
-    rowid           INT8            DEFAULT unique_rowid()      NOT NULL,
-    worker          varchar(50)                                 not null,
-    cluster_node    int                                         not null,
-    gateway_region  varchar(50),
-    gateway_az      varchar(50),
-    lease_holder    int,
-    int8_col        int8,
-    varchar50_col   varchar(50)                                 not null,
-    bool_col        bool                                        not null,
-    jsonb_col       jsonb                                       not null
-);
+see the mpload_<tablename> for the target table and code used to load that table.  
 
-begin;
-    create unique index ips_1 on ips(rowid) where int8_col is not null;
-    create index ips_2 on ips(create_time);
-    create index ips_3 on ips(int8_col);
-end;
 """
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=1
-    NUMBER_OF_TASKS=1
+    NUMBER_OF_WORKERS=50
+    NUMBER_OF_TASKS=10000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
-    USE_MULTI_ROW_INSERT = False
+    USE_MULTI_ROW_INSERT = True
     MUTLI_ROW_INSERT_SIZE = 100
     AUTO_COMMIT = True
     # Database connection details will either be from an AWS Secret, or they'll have
@@ -57,18 +38,20 @@ if __name__ == '__main__':
         connect_dict = None
     else:
         # Example using certs to connect
+        
         """
         connect_dict = {
-            "user"          : "myuser",
-            "host"          : "example.host.com",
+            "user"          : "login",
+            "host"          : "cockroach-dev.klei.com",
             "port"          : "26257",
             "dbname"        : "defaultdb",
             "sslmode"       : "require",
-            "sslrootcert"   : "/home/ec2-user/Library/CockroachCloud/certs/ca.crt",
-            "sslcert"       : "/home/ec2-user/Library/CockroachCloud/certs/myuser.crt",
-            "sslkey"        : "/home/ec2-user/Library/CockroachCloud/certs/myuser.key"
+            "sslrootcert"   : "/home/ec2-user/Library/CockroachCloud/certs/klei-demo-ca.crt",
+            "sslcert"       : "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.crt",
+            "sslkey"        : "/home/ec2-user/Library/CockroachCloud/certs/klei-client-login.key"
         }
         """
+
         """
         Note, that if the password is not supplied, the connection manager will look
         at the os envriornment for "password"
@@ -79,13 +62,15 @@ if __name__ == '__main__':
         """
         connect_dict = {
             "user": "ron",
-            "host": "internal-nollen-cmek-cluster-7jd.aws-us-west-2.cockroachlabs.cloud",
+            "password": "ron123",
+            "host": "192.168.4.134",
             "port": "26257",
-            "dbname": "defaultdb",
-            "sslrootcert": "/home/ec2-user/Library/CockroachCloud/certs/nollen-cmek-cluster-ca.crt"
+            "dbname": "db_with_abstractions",
+            "sslrootcert": "/home/ec2-user/certs/ca.crt"
             }
+
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
-    mpunit = mpqueue.MPQueue(application_name = 'IPS', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, secret_name=SECRET_NAME, region_name=REGION_NAME, auto_commit=AUTO_COMMIT, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, use_multi_row_insert=USE_MULTI_ROW_INSERT)
+    mpunit = mpload_users.MPQueue(application_name = 'load_users', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, secret_name=SECRET_NAME, region_name=REGION_NAME, auto_commit=AUTO_COMMIT, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, use_multi_row_insert=USE_MULTI_ROW_INSERT)
 
     for i in range(NUMBER_OF_WORKERS):
         Process(target=mpunit.worker, args=(mpunit.task_queue, mpunit.done_queue)).start()
