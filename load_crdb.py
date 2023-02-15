@@ -1,5 +1,5 @@
 from pickle import FALSE
-import mpload_users
+import mpload_asset_forrest_v2
 from multiprocessing import Process, Queue, current_process
 
 """
@@ -9,11 +9,11 @@ see the mpload_<tablename> for the target table and code used to load that table
 
 if __name__ == '__main__':
 
-    NUMBER_OF_WORKERS=50
-    NUMBER_OF_TASKS=10000
+    NUMBER_OF_WORKERS=30
+    NUMBER_OF_TASKS=100000
     INCLUDE_LEASEHOLDER = False
     USE_UNIQUE_INDEX = False
-    USE_MULTI_ROW_INSERT = True
+    USE_MULTI_ROW_INSERT = False # For assest_forrest, multi-row inserts probably won't work due to hierarchy
     MUTLI_ROW_INSERT_SIZE = 100
     AUTO_COMMIT = True
     # Database connection details will either be from an AWS Secret, or they'll have
@@ -63,14 +63,14 @@ if __name__ == '__main__':
         connect_dict = {
             "user": "ron",
             "password": "ron123",
-            "host": "192.168.4.134",
+            "host": "192.168.2.10",
             "port": "26257",
-            "dbname": "db_with_abstractions",
+            "dbname": "dlav",
             "sslrootcert": "/home/ec2-user/certs/ca.crt"
             }
 
     # Initialize the multiprocesssing class so that the worker can be started and passed execution parameters.
-    mpunit = mpload_users.MPQueue(application_name = 'load_users', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, secret_name=SECRET_NAME, region_name=REGION_NAME, auto_commit=AUTO_COMMIT, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, use_multi_row_insert=USE_MULTI_ROW_INSERT)
+    mpunit = mpload_asset_forrest_v2.MPQueue(application_name = 'load_asset_forrest', use_aws_secret = GET_DATABASE_CONNECTION_DETAILS_FROM_AWS_SECRET, secret_name=SECRET_NAME, region_name=REGION_NAME, auto_commit=AUTO_COMMIT, connection_dict=connect_dict, update_rec_with_leaseholder=INCLUDE_LEASEHOLDER, use_multi_row_insert=USE_MULTI_ROW_INSERT)
 
     for i in range(NUMBER_OF_WORKERS):
         Process(target=mpunit.worker, args=(mpunit.task_queue, mpunit.done_queue)).start()

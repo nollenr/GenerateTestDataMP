@@ -13,6 +13,11 @@ class MPQueue():
 
     Using a class with instance variables was the best way that I could find to send start up parameters to a worker.
 
+    create database db_with_abstractions_limitations;
+    alter database db_with_abstractions_limitations set primary region "aws-us-west-2";
+    alter database db_with_abstractions_limitations add region "aws-ap-southeast-1";
+    alter database db_with_abstractions_limitations add region "aws-eu-central-1";
+
     CREATE TABLE public.users (
         id UUID NOT NULL DEFAULT gen_random_uuid(),
         auth_id VARCHAR(100) NOT NULL,
@@ -23,11 +28,12 @@ class MPQueue():
         default_picture VARCHAR NULL,
         preferences JSONB NULL,
         metadata JSONB NULL,
+        national_id STRING NOT NULL,
         created_at TIMESTAMPTZ NULL DEFAULT now():::TIMESTAMPTZ,
         updated_at TIMESTAMPTZ NULL DEFAULT now():::TIMESTAMPTZ,
-        crdb_region db_with_abstractions.public.crdb_internal_region NOT VISIBLE NOT NULL DEFAULT default_to_database_primary_region(gateway_region())::db_with_abstractions.public.crdb_internal_region,
+        crdb_region db_with_abstractions_limitations.public.crdb_internal_region NOT VISIBLE NOT NULL DEFAULT default_to_database_primary_region(gateway_region())::db_with_abstractions_limitations.public.crdb_internal_region,
         CONSTRAINT users_rbr_pkey PRIMARY KEY (id ASC)
-    ) LOCALITY REGIONAL BY ROW
+    ) LOCALITY REGIONAL BY ROW;
 
 
     """
