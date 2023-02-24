@@ -62,7 +62,6 @@ if __name__ == '__main__':
         """
         connect_dict = {
             "user": "ron",
-            "password": "ron123",
             "host": "192.168.2.10",
             "port": "26257",
             "dbname": "dlav",
